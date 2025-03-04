@@ -1,6 +1,7 @@
 import { IQueue } from "./interfaces/IQueue"
 
 export class Queue {
+  static MAX_SIZE = 10
   private queue: IQueue[] = []
 
   get() {
@@ -13,6 +14,7 @@ export class Queue {
   }
 
   add(queueItem: IQueue) {
+    if (this.queue.length >= Queue.MAX_SIZE) { return } 
     this.queue.push(queueItem)
   }
 
