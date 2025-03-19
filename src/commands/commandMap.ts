@@ -7,6 +7,7 @@ import { queueCommand } from "./queue";
 export class Command {
   private map: Record<string, any> = {
     alenafm: (message: Message<true>) => playCommand(message, ['https://www.youtube.com/watch?v=4xDzrJKXOOY']),
+    ravefm: (message: Message<true>) => playCommand(message, ['https://www.youtube.com/watch?v=34H1XIjnfKM']),
     play: playCommand,
     stop: stopCommand,
     skip: skipCommand,
