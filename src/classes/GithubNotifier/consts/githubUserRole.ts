@@ -1,0 +1,4 @@
+export enum GITHUB_USER_ROLE {
+  FRONT_END = 'FRONT_END',
+  BACK_END = 'BACK_END'
+}
