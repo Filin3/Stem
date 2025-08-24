@@ -146,9 +146,11 @@ export class GithubNotifier {
     }
 
     if (action === GITHUB_PULL_REQUEST_ACTION.REVIEW_REQUESTED) {
-      const reviewerMention = userMention(receiverAccountConfig!.discordId)
+      const reviewerText = receiver && receiverAccountConfig 
+        ? userMention(receiverAccountConfig.discordId)
+        : hyperlink(receiver!, hideLinkEmbed(payload.requested_reviewer!.html_url))
 
-      return `${senderText} assigned ${reviewerMention} for review in ${prUrl}`
+      return `${senderText} assigned ${reviewerText} for review in ${prUrl}`
     }
 
     return null
