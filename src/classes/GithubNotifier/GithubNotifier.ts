@@ -1,11 +1,12 @@
-import { ChannelType, Client, hideLinkEmbed, hyperlink, userMention } from "discord.js";
-import { githubAccountMap } from "../../../configs/githubAccountMap"
-import { getHMAC } from "src/utils/crypto";
-import { IGithubPullRequest } from './interfaces/IGithubPullRequest'
-import { IGithubAccountMapItem } from './interfaces/IGithubAccountMapItem'
-import { GITHUB_PULL_REQUEST_ACTION } from "./consts/githubPullRequestAction"
-import { GITHUB_USER_ROLE } from "./consts/githubUserRole"
-import { isDraftPullRequest } from "./consts/isDraftPullRequest"
+import {ChannelType, Client, hideLinkEmbed, hyperlink, userMention} from "discord.js";
+import {githubAccountMap} from "../../../configs/githubAccountMap"
+import {getHMAC} from "src/utils/crypto";
+import {IGithubPullRequest} from './interfaces/IGithubPullRequest'
+import {IGithubAccountMapItem} from './interfaces/IGithubAccountMapItem'
+import {GITHUB_PULL_REQUEST_ACTION} from "./consts/githubPullRequestAction"
+import {GITHUB_USER_ROLE} from "./consts/githubUserRole"
+import {isDraftPullRequest} from "./consts/isDraftPullRequest"
+import {isEpicPullRequest} from "./consts/isEpicPullRequest";
 
 export class GithubNotifier {
   private client: Client;
@@ -68,13 +69,13 @@ export class GithubNotifier {
     res.status(403).send("403");
   }
 
-  private httpReceiverEventListenerOnError (headersJSON, bodyJSON) {
+  private httpReceiverEventListenerOnError(headersJSON, bodyJSON) {
     console.log(
       `[GithubNotifier] 403 headers: ${headersJSON} body: ${bodyJSON}`
-    );    
+    );
   }
 
-  private httpReceiverEventListenerOnSuccess (payload: IGithubPullRequest) {    
+  private httpReceiverEventListenerOnSuccess(payload: IGithubPullRequest) {
     if (!this.processedStatuses.includes(payload.action)) return
 
     const sender = payload.sender.login
@@ -96,15 +97,15 @@ export class GithubNotifier {
     )
   }
 
-  private getLoginOfReceiver (payload: IGithubPullRequest): string | null {
+  private getLoginOfReceiver(payload: IGithubPullRequest): string | null {
     if (payload.action === GITHUB_PULL_REQUEST_ACTION.REVIEW_REQUESTED) {
       return payload.requested_reviewer!.login
     }
 
     return null
   }
- 
-  private getAccountConfig (login: string): IGithubAccountMapItem | null {
+
+  private getAccountConfig(login: string): IGithubAccountMapItem | null {
     const config = githubAccountMap[login]
 
     if (!config) {
@@ -115,13 +116,13 @@ export class GithubNotifier {
     return config
   }
 
-  private getTextChannelId (config: IGithubAccountMapItem): string {
-    return config.role === GITHUB_USER_ROLE.FRONT_END 
-      ? this.frontEndTextChannelId 
+  private getTextChannelId(config: IGithubAccountMapItem): string {
+    return config.role === GITHUB_USER_ROLE.FRONT_END
+      ? this.frontEndTextChannelId
       : this.backEndTextChannelId
   }
 
-  private getNotifyMessage (
+  private getNotifyMessage(
     sender: string,
     receiver: string | null,
     senderAccountConfig: IGithubAccountMapItem,
@@ -131,11 +132,14 @@ export class GithubNotifier {
     const action = payload.action
     const senderText = hyperlink(sender, hideLinkEmbed(payload.sender.html_url))
     const prUrl = payload.pull_request.html_url
+    const title = payload.pull_request.title
+
+    if (isEpicPullRequest(title)) return null
 
     if (action === GITHUB_PULL_REQUEST_ACTION.OPENED) {
-      if (isDraftPullRequest(payload.pull_request.title)) return null
+      if (isDraftPullRequest(title)) return null
 
-      return `new PR from ${senderText} - ${prUrl}`
+      return `new PR by ${senderText} - ${prUrl}`
     }
 
     if (action === GITHUB_PULL_REQUEST_ACTION.EDITED) {
@@ -146,7 +150,7 @@ export class GithubNotifier {
     }
 
     if (action === GITHUB_PULL_REQUEST_ACTION.REVIEW_REQUESTED) {
-      const reviewerText = receiver && receiverAccountConfig 
+      const reviewerText = receiver && receiverAccountConfig
         ? userMention(receiverAccountConfig.discordId)
         : hyperlink(receiver!, hideLinkEmbed(payload.requested_reviewer!.html_url))
 
@@ -154,7 +158,7 @@ export class GithubNotifier {
     }
 
     return null
-  } 
+  }
 
   private verifyRequest(
     headers: Record<string, string>,
